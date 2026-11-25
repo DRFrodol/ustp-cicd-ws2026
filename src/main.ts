@@ -4,11 +4,11 @@ const COLUMNS = 10;
 const ROWS = 20;
 const CELL = 30;
 
-type PieceType = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L';
-type Matrix = number[][];
-type Piece = { type: PieceType; matrix: Matrix; x: number; y: number };
+export type PieceType = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L';
+export type Matrix = number[][];
+export type Piece = { type: PieceType; matrix: Matrix; x: number; y: number };
 
-const SHAPES: Record<PieceType, Matrix> = {
+export const SHAPES: Record<PieceType, Matrix> = {
   I: [[1, 1, 1, 1]],
   O: [[1, 1], [1, 1]],
   T: [[0, 1, 0], [1, 1, 1]],
@@ -68,11 +68,11 @@ let gameOver = false;
 let lastDrop = 0;
 let animationFrame = 0;
 
-function createBoard(): (PieceType | null)[][] {
+export function createBoard(): (PieceType | null)[][] {
   return Array.from({ length: ROWS }, () => Array<PieceType | null>(COLUMNS).fill(null));
 }
 
-function refillBag(): void {
+export function refillBag(): void {
   const types = Object.keys(SHAPES) as PieceType[];
   for (let i = types.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -81,17 +81,17 @@ function refillBag(): void {
   bag.push(...types);
 }
 
-function drawFromBag(): PieceType {
+export function drawFromBag(): PieceType {
   if (bag.length === 0) refillBag();
   return bag.pop()!;
 }
 
-function createPiece(type: PieceType): Piece {
+export function createPiece(type: PieceType): Piece {
   const matrix = SHAPES[type].map((row) => [...row]);
   return { type, matrix, x: Math.floor((COLUMNS - matrix[0].length) / 2), y: 0 };
 }
 
-function collision(piece: Piece, dx = 0, dy = 0, matrix = piece.matrix): boolean {
+export function collision(piece: Piece, dx = 0, dy = 0, matrix = piece.matrix): boolean {
   return matrix.some((row, rowIndex) => row.some((value, columnIndex) => {
     if (!value) return false;
     const x = piece.x + columnIndex + dx;
@@ -104,7 +104,7 @@ function fillUpcoming(): void {
   while (upcoming.length < 6) upcoming.push(drawFromBag());
 }
 
-function spawnNext(): void {
+export function spawnNext(): void {
   fillUpcoming();
   active = createPiece(upcoming.shift()!);
   fillUpcoming();
@@ -113,11 +113,11 @@ function spawnNext(): void {
   if (collision(active)) finishGame();
 }
 
-function rotate(matrix: Matrix): Matrix {
+export function rotate(matrix: Matrix): Matrix {
   return matrix[0].map((_, column) => matrix.map((row) => row[column]).reverse());
 }
 
-function rotateActive(): void {
+export function rotateActive(): void {
   if (paused || gameOver) return;
   const rotated = rotate(active.matrix);
   for (const offset of [0, -1, 1, -2, 2]) {
@@ -129,7 +129,7 @@ function rotateActive(): void {
   }
 }
 
-function move(dx: number, dy: number): boolean {
+export function move(dx: number, dy: number): boolean {
   if (paused || gameOver || collision(active, dx, dy)) return false;
   active.x += dx;
   active.y += dy;
@@ -137,7 +137,7 @@ function move(dx: number, dy: number): boolean {
   return true;
 }
 
-function holdPiece(): void {
+export function holdPiece(): void {
   if (paused || gameOver || !canHold) return;
   const currentType = active.type;
   if (held) {
@@ -152,7 +152,7 @@ function holdPiece(): void {
   holdStatus.textContent = 'HOLD USED';
 }
 
-function hardDrop(): void {
+export function hardDrop(): void {
   if (paused || gameOver) return;
   let distance = 0;
   while (!collision(active, 0, 1)) {
@@ -163,7 +163,7 @@ function hardDrop(): void {
   lockPiece();
 }
 
-function lockPiece(): void {
+export function lockPiece(): void {
   for (let y = 0; y < active.matrix.length; y++) {
     for (let x = 0; x < active.matrix[y].length; x++) {
       if (!active.matrix[y][x]) continue;
@@ -226,7 +226,7 @@ function showOverlay(kicker: string, title: string, copy: string, buttonText: st
   overlay.hidden = false;
 }
 
-function togglePause(): void {
+export function togglePause(): void {
   if (gameOver) return;
   paused = !paused;
   if (paused) showOverlay('TAKE A MOMENT', 'Take a breath.', 'Your stack will be right here.', 'RESUME GAME', togglePause);
@@ -234,7 +234,7 @@ function togglePause(): void {
   lastDrop = performance.now();
 }
 
-function restart(): void {
+export function restart(): void {
   board = createBoard();
   bag = [];
   upcoming = [];
@@ -340,7 +340,7 @@ function render(time: number): void {
   animationFrame = requestAnimationFrame(render);
 }
 
-function handleKey(event: KeyboardEvent): void {
+export function handleKey(event: KeyboardEvent): void {
   const key = event.key.toLowerCase();
   if (['arrowleft', 'arrowright', 'arrowdown', 'arrowup', ' '].includes(key)) event.preventDefault();
   if (key === 'p' || key === 'escape') { togglePause(); return; }
@@ -373,3 +373,26 @@ lastDrop = performance.now();
 animationFrame = requestAnimationFrame(render);
 
 window.addEventListener('pagehide', () => cancelAnimationFrame(animationFrame));
+
+export function getGameState() {
+  return {
+    board: board.map((row) => [...row]),
+    active: { ...active, matrix: active.matrix.map((row) => [...row]) },
+    upcoming: [...upcoming],
+    held,
+    canHold,
+    score,
+    lines,
+    level,
+    paused,
+    gameOver,
+  };
+}
+
+export function setBoardForTesting(rows: (PieceType | null)[][]): void {
+  board = rows;
+}
+
+export function setActiveForTesting(piece: Piece): void {
+  active = piece;
+}

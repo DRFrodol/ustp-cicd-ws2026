@@ -58,8 +58,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npx vitest run --reporter=junit --outputFile=test-results/junit.xml
+      - name: Run unit tests with coverage
+        run: npx vitest run --coverage --reporter=junit --outputFile=test-results/junit.xml
+
+      - name: Add coverage summary
+        if: always()
+        run: |
+          node -e "const c=require('./coverage/coverage-summary.json').total; console.log('Code coverage: ' + c.lines.pct + '% lines, ' + c.branches.pct + '% branches, ' + c.functions.pct + '% functions')" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test results
         if: always()
@@ -67,4 +72,12 @@ jobs:
         with:
           name: test-results-${{ matrix.os }}
           path: test-results/
+          if-no-files-found: error
+
+      - name: Upload coverage results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: coverage/
           if-no-files-found: error
